@@ -1,26 +1,29 @@
-let relativePath = "./index.js";
-let absolutePath = "__dirname";
+var http = require("http");
 
-var http = require('http')
-var fs = require('fs')
+let server = http.createServer(handleServer);
 
-var qs = require('querystring')
+let fs = require("fs");
+let qu = require("qu");
 
-var server = http.createServer(handleRequest)
-
-function handleRequest(req,res){
-    var store = ''
-    if(req.method === 'GET' && req.url === '/form'){
-        res.setHeader('Content-Type', 'text/html')
-        fs.createReadStream('./form.html').pipe(res)
+function handleServer(req, res) {
+  let store = "";
+  let contentType = req.headers["content-type"];
+  req.on("data", (chunk) => {
+    store += chunk;
+  });
+  req.on("end", () => {
+    if (req.url === "/form" && req.method === "GET") {
+      res.setHeader("Content-Type", "text/html");
+      fs.createReadStream("./form.html").pipe(res);
+    } else if (req.method === "POST" && req.url === "/form") {
+      res.setHeader("Content-Type", "text/html");
+      let parseData = qu.parse(store);
+      res.end(`
+            <h1>${parseData.name}</h1>
+            <h2>${parseData.email}</h2> 
+            <h2>${parseData.age}</h2>`);
     }
-    req.on('data',(chunk)=>{
-        store = store + chunk
-    })
-    req.on('end', ()=>{
-        var formData = qs.parse(store)
-        res.end(store)
-    })
+  });
 }
 
 server.listen(5678, ()=>{
